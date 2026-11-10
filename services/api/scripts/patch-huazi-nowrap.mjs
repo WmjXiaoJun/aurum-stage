@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+const p = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\services\\api\\src\\media\\huazi.ts";
+let s = fs.readFileSync(p, 'utf8');
+s = s.replace("font-weight:900;font-size:\${size}px;letter-spacing:2px;", "font-weight:900;font-size:\${size}px;letter-spacing:2px;white-space:nowrap;");
+s = s.replace("outPath: string, width = 900, height = 320", "outPath: string, width = 1200, height = 300");
+s = s.replace("if (clean.length < 2 || clean.length > 8) continue;", "if (clean.length < 2 || clean.length > 7) continue;");
+fs.writeFileSync(p, s);
+console.log('nowrap patched');
+const q = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\\\services\\\\api\\\\src\\\\media\\\\ffmpeg.ts";
+let f = fs.readFileSync(q, 'utf8');
+f = f.replace("colorkey=0x00b140:0.30:0.08,scale=", "colorkey=0x00b140:0.42:0.10,despill=type=green:mix=0.6:expand=0.15,scale=");
+f = f.replace("'scale=' + Math.round(width * 0.46)", "'scale=' + Math.round(width * 0.55)");
+fs.writeFileSync(q, f);
+console.log('key/scale patched');

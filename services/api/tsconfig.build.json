@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "../..",
+    "noEmit": false,
+    "types": [
+      "node"
+    ],
+    "moduleResolution": "Bundler",
+    "sourceMap": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../packages/core/src/**/*.ts"
+  ]
+}

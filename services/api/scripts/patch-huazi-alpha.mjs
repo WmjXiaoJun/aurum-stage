@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const H = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\\\services\\\\api\\\\src\\\\media\\\\huazi.ts";
+let h = fs.readFileSync(H, 'utf8');
+h = h.split('background:#00b140').join('background:transparent');
+fs.writeFileSync(H, h);
+const F = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\\\services\\\\api\\\\src\\\\media\\\\ffmpeg.ts";
+let f = fs.readFileSync(F, 'utf8');
+f = f.replace("colorkey=0x00b140:0.22:0.02,scale=", "scale=");
+fs.writeFileSync(F, f);
+console.log('transparent png + no key');

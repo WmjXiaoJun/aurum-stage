@@ -1,0 +1,205 @@
+# ============================================================================
+# 玄枢・AURUM · 生产配置样例（deploy/config.example.yaml）
+# ----------------------------------------------------------------------------
+# 对应需求文档 17.4 的部署配置结构：engine / render / compose / storage 四段。
+# 该文件是「可读可评审」的机房配置基线，环境变量（deploy/.env.example）
+# 会覆盖同名项；两者冲突时以环境变量为准。
+# 用法：cp deploy/config.example.yaml deploy/config.yaml 后按机房改写。
+# ============================================================================
+
+version: "1.0"
+
+# ---------------------------------------------------------------------------
+# engine：引擎通道（云端 Muse / 本地 ComfyUI·H3 / TTS / 口型对齐）
+# ---------------------------------------------------------------------------
+engine:
+  # 默认渲染通道：muse_api（云端·鎏金） | comfy_h3（本地·青玉）
+  default: comfy_h3
+
+  cloud:
+    provider: muse_video
+    base_url: https://api.muse.example
+    # 每秒请求上限，调度器据此限制 muse_api 同类型并发（1-3 为安全区间）
+    qps: 2
+    timeout_sec: 180
+    # 云端超时 ≤2 次重试（错误码 CLOUD_TIMEOUT / cloud-retry）
+    retry:
+      max_attempt: 2
+      backoff_sec: 15
+    # 账号池：额度耗尽切下一个（QUOTA_EXHAUSTED / reassign），限流则冷却后换号（RATE_LIMITED / cooling）
+    accounts:
+      - account_name: muse-main-01
+        secret_ref: env:MUSE_API_KEY_01
+        quota_limit: 5000
+      - account_name: muse-backup-01
+        secret_ref: env:MUSE_API_KEY_02
+        quota_limit: 2000
+        cooldown_sec: 120
+
+  local:
+    kind: comfyui
+    # 不同视觉风格对应的 ComfyUI 工作流模板键（workflow_template.template_key）
+    default_template_key: h3_t2v_v1
+    # 单片段时长硬上限（秒）：H3 单次生成不超过 8s，超出由调度层拆镜
+    h3_max_duration_sec: 8
+    # 单节点并发：24G 显存 1，48G 显存可 2
+    concurrency_per_node: 1
+    # 失败重试：ComfyUI 节点报错换节点（NODE_ERROR / reassign），OOM 降参重试一次
+    max_attempt: 2
+    oom_degrade: true
+    # 节点清单：与服务端 agent_node 表同构，节点首次心跳后会以自报数据为准
+    nodes:
+      - node_key: gpu-h3-01
+        base_url: http://10.0.0.31:8188
+        engine_tags: [h3, lipsync]
+        vram_total_gb: 24
+        models_loaded: [h3_t2v_v1, musetalk_v1]
+      - node_key: gpu-h3-02
+        base_url: http://10.0.0.32:8188
+        engine_tags: [h3]
+        vram_total_gb: 48
+        models_loaded: [h3_t2v_v1]
+
+  # TTS：IndexTTS-2 零样本克隆（GPU 节点上裸进程，不进 compose）
+  tts:
+    provider: indextts2
+    worker_url: http://10.0.0.21:9001
+    # 并发 = 卡数 × 1，调度器按此控制同类型并行度
+    concurrency: 4
+    # 每句台词生成 3 个候选，编导在镜头卡上 3 选 1
+    candidates: 3
+    timeout_sec: 120
+    # 参考音频体检阈值（voices/:id/health 使用同一套规则）
+    ref_audio:
+      min_sec: 6
+      max_sec: 15
+      min_count: 2
+      require_emotional_peak: true
+    # 视频目标时长 = TTS 实测时长 + 呼吸留白
+    breath_ms: 300
+
+  # lip-sync：MuseTalk，仅对说话人的特写类机位生效
+  lipsync:
+    enabled: true
+    engine: musetalk
+    # close_up_only（默认）| all_talking | off
+    trigger: close_up_only
+    cameras: [close_up, extreme_close_up, medium_close_up]
+    # 未检测到人脸 / 对齐后嘴部崩坏 → 不阻断，保留原片（LIPSYNC_NO_FACE / LIPSYNC_BAD_QUALITY）
+    fail_open: true
+    protect_region: mouth_mask
+    max_attempt: 1
+
+# ---------------------------------------------------------------------------
+# render：时长硬约束、镜头规约、成片规格、调度参数
+# ---------------------------------------------------------------------------
+render:
+  # 单段成片硬上限：300 秒，不可配置（改动即破坏产品契约）
+  segment_cap_sec: 300
+  # 预警线 280 秒，UI 进入「接近上限」态
+  segment_near_sec: 280
+  # 镜头时长：2s 以下/8s 以上仅警告，不阻断
+  shot_min_warn_ms: 2000
+  shot_max_warn_ms: 8000
+  # 镜头间呼吸留白，参与段时长与时间轴计算
+  shot_gap_ms: 200
+  # 成片规格预设（COMPOSE_PRESETS）
+  presets:
+    "9:16":
+      width: 1080
+      height: 1920
+      fps: 25
+      crf: 20
+    "16:9":
+      width: 1920
+      height: 1080
+      fps: 25
+      crf: 20
+    "1:1":
+      width: 1080
+      height: 1080
+      fps: 25
+      crf: 20
+    "4:5":
+      width: 1080
+      height: 1350
+      fps: 25
+      crf: 20
+  # 调度器：tick 350ms，全局并行 4，按任务类型分级并发
+  scheduler:
+    enabled: true
+    tick_ms: 350
+    max_parallel: 4
+    concurrency:
+      tts: 4
+      muse_api: 2
+      comfy_h3: 1
+      lipsync: 2
+      compose: 1
+    # 节点心跳超过 30s 未上报即判定 offline，在跑任务回收重派（NODE_OFFLINE / recover）
+    node_heartbeat_timeout_sec: 30
+    # 长轮询拉任务的最长挂起时间（GET /api/v1/agent/tasks/pull?wait=30）
+    agent_pull_wait_sec: 30
+
+# ---------------------------------------------------------------------------
+# compose：FFmpeg 合成、字幕花字、BGM
+# ---------------------------------------------------------------------------
+compose:
+  # 留空则使用 ffmpeg-static 自带二进制；生产建议挂系统 ffmpeg
+  ffmpeg_path: /usr/bin/ffmpeg
+  # BGM 混音增益（dB）
+  bgm_volume_db: -18
+  # 无 FFmpeg 时退化为清单导出（COMPOSE_NO_FFMPEG：输出 SRT/ASS + manifest）
+  degrade_to_manifest: true
+  subtitle:
+    # ASS 烧录样式：访谈类默认黑体 + 鎏金描边
+    font_name: Noto Sans CJK SC
+    font_size: 44
+    primary_color: "&H00E7F0F4"
+    outline_color: "&H007EB8D4"
+    outline: 2
+    shadow: 1
+    margin_v: 120
+  # 花字（overlay）默认出入点，秒
+  flower:
+    default_in: 0.5
+    default_out: 3.5
+  # 成片落在 storage.exports 下，便于备份脚本单独处理
+  export_dir: exports
+
+# ---------------------------------------------------------------------------
+# storage：对象存储、共享存储、保留策略
+# ---------------------------------------------------------------------------
+storage:
+  # 默认 backend：local（.data/storage，零依赖）| minio（生产）
+  backend: minio
+  local:
+    root: /data/storage
+    bucket: assets
+  minio:
+    endpoint: minio:9000
+    console_port: 9001
+    bucket: aurum
+    use_ssl: false
+    # 对象前缀约定：projects/<project_id>/{uploads,render,export}/
+    key_prefix: projects
+    region: us-east-1
+  # NFS 共享区：GPU 节点与中台交换中间产物，不做长期备份
+  nfs:
+    root: /nfs/aurum
+    subdirs: [frames, audio, tmp]
+    # 中间产物 TTL：超过即由清理任务删除
+    ttl_hours: 72
+  # 备份策略（deploy/README.md 的备份表与此一致）
+  backup:
+    postgres:
+      mode: pg_dump
+      schedule: "0 3 * * *"
+      retention_days: 30
+    minio:
+      mode: mirror
+      schedule: "0 4 * * 0"
+      target: s3://aurum-backup/
+    nfs:
+      enabled: false
+      note: 中间产物不备份，可从素材与台本重算

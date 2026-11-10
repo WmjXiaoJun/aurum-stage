@@ -1,0 +1,84 @@
+# ============================================================================
+# 鎏金台 AURUM STAGE · 业务中台镜像（deploy/Dockerfile.api）
+# ----------------------------------------------------------------------------
+# 构建上下文 = 仓库根（compose 里 context: ..），不是 services/api：
+# services/api 依赖 workspace 包 @aurum/core，pnpm 必须在 monorepo 根安装，
+# 只把 services/api 当上下文会在 install 阶段找不到 workspace 依赖。
+#
+# 三阶段：
+#   deps    pnpm install（带 store 缓存挂载）
+#   build   pnpm --filter @aurum/api build（tsc 产出 dist + 类型校验）
+#   runtime node:22-bookworm-slim，非 root 运行 node --experimental-sqlite
+#
+# 为什么用 bookworm-slim 而不是 alpine：
+#   1) ffmpeg-static 的二进制是 glibc 链接，musl 上无法执行（合成会退化清单模式）；
+#   2) node:sqlite 是 Node 22 内置模块，bookworm 官方镜像直接可用。
+# ============================================================================
+
+# syntax=docker/dockerfile:1.7
+
+# ---------------------------- 基础层 ----------------------------
+FROM node:22-bookworm-slim AS base
+ENV PNPM_HOME=/pnpm \
+    PATH=/pnpm:$PATH \
+    CI=1 \
+    NODE_ENV=development
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+WORKDIR /app
+
+# ---------------------------- 依赖安装 --------------------------
+FROM base AS deps
+# 只拷 workspace 描述文件，最大化利用层缓存
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY packages/core/package.json packages/core/package.json
+COPY services/api/package.json services/api/package.json
+COPY web/package.json web/package.json
+# ffmpeg-static / esbuild 的 postinstall 已在根 package.json 的
+# pnpm.onlyBuiltDependencies 中放行，这里无需额外 --allow-build
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# ---------------------------- 编译构建 --------------------------
+FROM deps AS build
+COPY tsconfig.base.json ./
+COPY packages ./packages
+COPY services ./services
+# tsc -p tsconfig.build.json：同时校验 packages/core 与 services/api 的类型
+RUN pnpm --filter @aurum/api build
+
+# ---------------------------- 运行镜像 --------------------------
+FROM node:22-bookworm-slim AS runtime
+
+# tini 负责转发 SIGTERM（index.ts 里注册了优雅退出）；
+# fonts-noto-cjk 供 FFmpeg/libass 烧录中文 ASS 字幕与花字。
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates tini fonts-noto-cjk \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV=production \
+    AURUM_HOST=0.0.0.0 \
+    AURUM_PORT=8787 \
+    AURUM_DATA_DIR=/data \
+    AURUM_LOG_LEVEL=info \
+    TZ=Asia/Shanghai
+
+WORKDIR /app
+# node_modules（含运行期需要的 tsx）、源码与 dist 一并继承自 build 阶段
+COPY --from=build /app /app
+
+# 数据目录：SQLite（.data/aurum.db）、本地对象存储（storage/）、导出（exports/）
+RUN mkdir -p /data/storage/thumbs /data/exports /nfs \
+ && chown -R node:node /data /nfs /app
+USER node
+
+EXPOSE 8787
+VOLUME ["/data"]
+
+HEALTHCHECK --interval=20s --timeout=5s --start-period=40s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.AURUM_PORT||8787)+'/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+# 入口用 tsx 直跑 TS 源码：tsconfig.build.json 的 rootDir 是仓库根，
+# 产出落在 dist/services/api/src/...，且 '@aurum/core' 这个裸包名在编译后
+# 仍指向 packages/core/src/index.ts，Node 无法直接加载 .ts，故运行期走 tsx。
+CMD ["node", "--experimental-sqlite", "--import", "tsx", "services/api/src/index.ts"]

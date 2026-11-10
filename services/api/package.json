@@ -1,0 +1,24 @@
+{
+  "name": "@aurum/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-sqlite --import tsx --watch src/index.ts",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "start": "node --experimental-sqlite --import tsx src/index.ts",
+    "serve": "node --experimental-sqlite --import tsx src/index.ts",
+    "test": "node --experimental-sqlite --import tsx --test test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "seed": "node --experimental-sqlite --import tsx src/tools/seed.ts"
+  },
+  "dependencies": {
+    "@aurum/core": "workspace:*",
+    "@fastify/cors": "^10.0.1",
+    "@fastify/static": "^8.0.2",
+    "@fastify/websocket": "^11.0.1",
+    "fastify": "^5.1.0",
+    "ffmpeg-static": "^5.3.0",
+    "zod": "^3.23.8"
+  }
+}

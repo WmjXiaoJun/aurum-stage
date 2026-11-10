@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const F = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\\\services\\\\api\\\\src\\\\media\\\\ffmpeg.ts";
+let f = fs.readFileSync(F, 'utf8');
+f = f.replace("chains.push('[' + (i + 1) + ':v]scale='", "chains.push('[' + (i + 1) + ':v]colorkey=0x00b140:0.36:0.06,scale='");
+fs.writeFileSync(F, f);
+const A = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\\\services\\\\api\\\\scripts\\\\assemble-final.mjs";
+let a = fs.readFileSync(A, 'utf8');
+a = a.replace("'-t', '18'", "'-t', '22'");
+fs.writeFileSync(A, a);
+console.log('colorkey restored, stills 22s');

@@ -1,0 +1,80 @@
+/* ============================================================
+   玄枢・AURUM · 设计 token（午夜黑金导播大厅 · v1.5.1 定版）
+   组件内禁止硬编码色值，一律引用本文件变量。
+   ============================================================ */
+:root {
+  /* 近黑中性色阶 */
+  --bg-page: #0a0c0f;
+  --bg-page-2: #0e1218;
+  --bg-panel: #131821;
+  --bg-panel-2: #1a202b;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* 品牌主色：鎏金 */
+  --gold: #d4b87e;
+  --gold-light: #e8d6a8;
+  --gold-deep: #a9884f;
+  --gold-soft: rgba(212, 184, 126, 0.12);
+
+  /* 伙伴色：青玉（只给本地引擎与隐私开关） */
+  --jade: #46a09b;
+  --jade-soft: rgba(70, 160, 155, 0.13);
+
+  /* 语义色 */
+  --up: #46af82;
+  --warn: #d99e3e;
+  --down: #e15b50;
+
+  /* 文字 */
+  --text-1: #f4f0e7;
+  --text-2: #9ba1ac;
+  --text-3: #636a76;
+
+  /* 圆角角色 */
+  --r-control: 6px;
+  --r-card: 10px;
+  --r-shell: 18px;
+  --r-pill: 999px;
+
+  /* 间距（8pt 网格） */
+  --s1: 4px;
+  --s2: 6px;
+  --s3: 8px;
+  --s4: 12px;
+  --s5: 14px;
+  --s6: 16px;
+  --s7: 19px;
+  --s8: 24px;
+  --s9: 28px;
+  --s10: 32px;
+
+  /* 尺寸 */
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 60px;
+  --row-h: 56px;
+
+  /* 字体 */
+  --font-ui: 'Microsoft YaHei UI', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+  --font-display: 'Bebas Neue', 'Bahnschrift', 'Impact', 'Arial Narrow', sans-serif;
+  --font-mono: 'Cascadia Mono', 'Consolas', 'SF Mono', monospace;
+
+  /* 层级 */
+  --z-content: 10;
+  --z-grain: 60;
+  --z-dropdown: 1000;
+  --z-mask: 1900;
+  --z-modal: 2000;
+  --z-toast: 3000;
+}
+
+/* 深场染光 + 全屏颗粒 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-grain);
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}

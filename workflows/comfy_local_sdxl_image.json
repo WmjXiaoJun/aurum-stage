@@ -1,0 +1,151 @@
+{
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 20261107,
+      "steps": 28,
+      "cfg": 6.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    }
+  },
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1280,
+      "height": 720,
+      "batch_size": 1
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "PASTE_PROMPT",
+      "clip": [
+        "4",
+        1
+      ]
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "PASTE_NEGATIVE",
+      "clip": [
+        "4",
+        1
+      ]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ],
+      "filename_prefix": "aurum_shot"
+    }
+  },
+  "10": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "PASTE_REF_FILENAME"
+    }
+  },
+  "11": {
+    "class_type": "IPAdapterModelLoader",
+    "inputs": {
+      "ipadapter_file": "ip-adapter_sdxl.safetensors"
+    }
+  },
+  "12": {
+    "class_type": "IPAdapterApply",
+    "inputs": {
+      "ipadapter": [
+        "11",
+        0
+      ],
+      "image": [
+        "10",
+        0
+      ],
+      "model": [
+        "4",
+        0
+      ],
+      "weight": 0.7,
+      "weight_type": "linear",
+      "start_at": 0,
+      "end_at": 1,
+      "unfold_batch": false
+    }
+  },
+  "_comment": "玄枢・AURUM · 本地 ComfyUI 通用模板（SDXL 文生图 + 可选 IPAdapter 角色锚定）。参数注入见 param_map；POST /api/v1/comfy/probe 会按你机器上实际安装的模型自动改写本模板。 v1.2：默认输出 720×1280（与云端 720p 对齐）。",
+  "_param_map": {
+    "prompt": {
+      "node": "6",
+      "field": "inputs.text"
+    },
+    "negative_prompt": {
+      "node": "7",
+      "field": "inputs.text"
+    },
+    "seed": {
+      "node": "3",
+      "field": "inputs.seed"
+    },
+    "width": {
+      "node": "5",
+      "field": "inputs.width"
+    },
+    "height": {
+      "node": "5",
+      "field": "inputs.height"
+    },
+    "ref_image": {
+      "node": "10",
+      "field": "inputs.image"
+    },
+    "checkpoint": {
+      "node": "4",
+      "field": "inputs.ckpt_name"
+    }
+  }
+}

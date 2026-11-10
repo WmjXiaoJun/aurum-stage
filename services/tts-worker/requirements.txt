@@ -1,0 +1,8 @@
+# 推理服务依赖（IndexTTS-2 / torch 由部署镜像单独安装，不进这里，保证 CPU 机器能起服务）
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30
+pydantic>=2.6
+
+# 冒烟测试（TestClient 需要 httpx）
+pytest>=8.0
+httpx>=0.27

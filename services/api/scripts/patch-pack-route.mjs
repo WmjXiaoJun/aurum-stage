@@ -1,0 +1,5 @@
+import fs from 'node:fs';
+const R = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\services\\api\\src\\";
+function pf(p, fn) { let s = fs.readFileSync(p, 'utf8'); const o = fn(s); if (o !== s) { fs.writeFileSync(p, o); console.log('patched', p.split('\\').pop()); } }
+pf(R + 'routes\\skills.ts', (s) => s.includes('development-pack') ? s : s.replace("  app.get('/skills', async () =>", "  // 综艺开发包：技能串成流水线，全过后直接落成段与镜头\n  app.post('/projects/:id/skills/development-pack', async (req) => {\n    const projectId = Number((req.params as { id: string }).id);\n    const body = (req.body ?? {}) as { brief?: string };\n    return runDevelopmentPack(projectId, String(body.brief ?? ''));\n  });\n\n" + "  app.get('/skills', async () =>"));
+pf(R + 'routes\\skills.ts', (s) => s.includes('runDevelopmentPack') ? s : s.replace("import { SKILLS, skillDef, runSkill, listSkillDocs, getSkillDoc } from '../domain/skills-service.js';", "import { SKILLS, skillDef, runSkill, listSkillDocs, getSkillDoc } from '../domain/skills-service.js';\nimport { runDevelopmentPack } from '../domain/development-pack.js';"));

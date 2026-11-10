@@ -1,0 +1,47 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build
+dist/
+build/
+*.tsbuildinfo
+
+# runtime data（本项目把数据放在 D: 盘，见 README）
+data/
+.data/
+aurum-data/
+storage/
+exports/
+logs/
+*.log
+*.db
+*.db-journal
+*.sqlite
+
+# media（体积大，不入库）
+deliverables/
+shots/
+media/
+*.mp4
+*.mov
+*.webm
+*.wav
+*.mp3
+*.png
+*.jpg
+!docs/screenshots/*.jpg
+!web/public/**/*.png
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+__pycache__/
+*.pyc

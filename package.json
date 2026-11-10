@@ -1,0 +1,28 @@
+{
+  "name": "aurum-stage",
+  "private": true,
+  "version": "1.0.0",
+  "description": "玄枢・AURUM · AI 微综艺智造中枢",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./services/api\" --filter \"./web\" dev",
+    "dev:api": "pnpm --filter @aurum/api dev",
+    "dev:web": "pnpm --filter @aurum/web dev",
+    "build": "pnpm --filter @aurum/web build && pnpm --filter @aurum/api build",
+    "start": "pnpm --filter @aurum/api start",
+    "serve": "pnpm --filter @aurum/api serve",
+    "test": "pnpm --filter @aurum/api test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "@types/node": "^22.9.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "ffmpeg-static"
+    ]
+  }
+}

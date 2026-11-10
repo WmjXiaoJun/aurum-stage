@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const H = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\\\services\\\\api\\\\src\\\\media\\\\huazi.ts";
+let h = fs.readFileSync(H, 'utf8');
+h = h.replace("const size = text.length > 7 ? 74 : text.length > 5 ? 86 : 100;", "const size = text.length > 7 ? 118 : text.length > 5 ? 132 : 150;");
+h = h.replace("outPath: string, width = 1200, height = 300", "outPath: string, width = 1400, height = 360");
+fs.writeFileSync(H, h);
+const F = "D:\\BaiduSyncdisk\\wmj_work\\XJ\\AIweizongyi\\aurum-stage\\\\services\\\\api\\\\src\\\\media\\\\ffmpeg.ts";
+let f = fs.readFileSync(F, 'utf8');
+f = f.replace("y=H*0.14", "y=H*0.08");
+fs.writeFileSync(F, f);
+console.log('bigger huazi');
